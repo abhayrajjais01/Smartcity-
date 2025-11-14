@@ -1,17 +1,11 @@
-// Smart City Dashboard - Enhanced with Live AQI APIs for Multiple Cities and States
-// Air Quality: API Ninjas (city-based) -> AQICN (city/coordinates) -> Open-Meteo (coordinates) -> OpenAQ (final fallback)
-// Weather API Key (OpenWeatherMap): 3c8ffd7f7339a065c6ce070bc0601a93
 
-// Note: API Ninjas and AQICN support city names directly for live AQI data across different cities and states
 const WEATHER_API_KEY = '3c8ffd7f7339a065c6ce070bc0601a93';
 
-// Chart contexts
 const aqCtx = document.getElementById('aqChart').getContext('2d');
 const weatherCtx = document.getElementById('weatherChart').getContext('2d');
 const trafficCtx = document.getElementById('trafficChart').getContext('2d');
 const energyCtx = document.getElementById('energyChart').getContext('2d');
 
-// DOM elements
 const cityInput = document.getElementById('cityInput');
 const loadBtn = document.getElementById('loadBtn');
 const loader = document.getElementById('loader');
@@ -19,7 +13,6 @@ const lastUpdate = document.getElementById('lastUpdate');
 const autoRefreshToggle = document.getElementById('autoRefresh');
 const insightsGrid = document.getElementById('insightsGrid');
 
-// Metric value elements
 const aqiValue = document.getElementById('aqiValue');
 const aqiLabel = document.getElementById('aqiLabel');
 const tempValue = document.getElementById('tempValue');
@@ -29,7 +22,6 @@ const trafficLabel = document.getElementById('trafficLabel');
 const energyValue = document.getElementById('energyValue');
 const energyLabel = document.getElementById('energyLabel');
 
-// Chart instances
 let aqChart = null;
 let weatherChart = null;
 let trafficChart = null;
@@ -39,7 +31,6 @@ let currentCoords = { lat: 28.6139, lon: 77.209 }; // default: Delhi
 let currentCity = 'Delhi';
 let refreshInterval = null;
 
-// Helper: Geocode city name to coordinates
 async function geocodeCity(city) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`;
   try {
@@ -59,10 +50,7 @@ async function geocodeCity(city) {
   return null;
 }
 
-// Fetch live AQI data for different cities and states
-// Uses multiple APIs to get real-time air quality data
 async function fetchAirPollution(lat, lon, cityName = null) {
-  // Try API Ninjas Air Quality API first (supports city names)
   if (cityName) {
     try {
       const url = `https://api.api-ninjas.com/v1/airquality?city=${encodeURIComponent(cityName)}`;
@@ -81,9 +69,9 @@ async function fetchAirPollution(lat, lon, cityName = null) {
       }
     } catch (err) {
       console.warn('API Ninjas failed, trying AQICN:', err.message);
-      // Try AQICN API (World Air Quality Index)
+
       try {
-        const aqicnUrl = `https://api.waqi.info/feed/${encodeURIComponent(cityName)}/?token=demo`; // Use demo token or get your own
+        const aqicnUrl = `https://api.waqi.info/feed/${encodeURIComponent(cityName)}/?token=demo`;
         const aqicnRes = await axios.get(aqicnUrl);
         console.log('AQICN API response:', aqicnRes.data);
         if (aqicnRes.data && aqicnRes.data.status === 'ok' && aqicnRes.data.data) {
@@ -95,7 +83,7 @@ async function fetchAirPollution(lat, lon, cityName = null) {
         }
       } catch (aqicnErr) {
         console.warn('AQICN city search failed, trying coordinates:', aqicnErr.message);
-        // Try AQICN with coordinates
+
         try {
           const aqicnCoordUrl = `https://api.waqi.info/feed/geo:${lat};${lon}/?token=demo`;
           const aqicnCoordRes = await axios.get(aqicnCoordUrl);
@@ -113,9 +101,8 @@ async function fetchAirPollution(lat, lon, cityName = null) {
     }
   }
   
-  // Fallback to coordinate-based APIs
+
   try {
-    // Try Open-Meteo Air Quality API (works globally with coordinates)
     const url = 'https://air-quality-api.open-meteo.com/v1/air-quality';
     const params = {
       latitude: lat,
@@ -132,14 +119,12 @@ async function fetchAirPollution(lat, lon, cityName = null) {
     throw new Error('Invalid response format from Open-Meteo');
   } catch (err) {
     console.warn('Open-Meteo Air Quality API failed, falling back to OpenAQ:', err.message);
-    // Final fallback to OpenAQ
     const openAQData = await fetchOpenAQ(lat, lon);
     console.log('OpenAQ fallback response:', openAQData);
     return openAQData;
   }
 }
 
-// Fetch air pollution forecast from Open-Meteo Air Quality API
 async function fetchAirPollutionForecast(lat, lon) {
   try {
     const url = 'https://air-quality-api.open-meteo.com/v1/air-quality';
@@ -159,7 +144,6 @@ async function fetchAirPollutionForecast(lat, lon) {
   }
 }
 
-// Fallback: Fetch air quality data from OpenAQ (if OpenWeatherMap fails)
 async function fetchOpenAQ(lat, lon, limit = 50) {
   try {
   const url = 'https://api.openaq.org/v2/measurements';
@@ -177,7 +161,7 @@ async function fetchOpenAQ(lat, lon, limit = 50) {
   }
 }
 
-// Fetch weather data from OpenWeatherMap
+
 async function fetchOpenWeatherMap(lat, lon) {
   try {
     const url = 'https://api.openweathermap.org/data/2.5/forecast';
@@ -197,7 +181,6 @@ async function fetchOpenWeatherMap(lat, lon) {
   }
 }
 
-// Fallback: Fetch weather from Open-Meteo (no API key)
 async function fetchOpenMeteo(lat, lon) {
   try {
   const url = 'https://api.open-meteo.com/v1/forecast';
@@ -216,7 +199,6 @@ async function fetchOpenMeteo(lat, lon) {
   }
 }
 
-// Simulate traffic density based on time and weather
 function generateTrafficData(weatherData, hours = 24) {
   const traffic = [];
   const baseTraffic = 60; // Base traffic percentage
@@ -237,7 +219,6 @@ function generateTrafficData(weatherData, hours = 24) {
   return traffic;
 }
 
-// Simulate energy consumption based on temperature and time
 function generateEnergyData(weatherData, hours = 24) {
   const energy = [];
   let isOpenWeather = weatherData && weatherData.list;
@@ -252,8 +233,8 @@ function generateEnergyData(weatherData, hours = 24) {
     
     const hour = new Date().getHours() + i;
     let energyLevel = 50;
+
     
-    // Higher energy during peak hours (6-10 AM, 6-10 PM)
     if ((hour % 24 >= 6 && hour % 24 <= 10) || (hour % 24 >= 18 && hour % 24 <= 22)) {
       energyLevel = 70 + Math.random() * 15;
     } else if (hour % 24 >= 22 || hour % 24 <= 6) {
@@ -262,7 +243,7 @@ function generateEnergyData(weatherData, hours = 24) {
       energyLevel = 50 + Math.random() * 15;
     }
     
-    // Adjust based on temperature (extreme temps need more heating/cooling)
+
     if (temp < 10 || temp > 30) {
       energyLevel += 15;
     }
@@ -272,9 +253,8 @@ function generateEnergyData(weatherData, hours = 24) {
   return energy;
 }
 
-// Calculate AQI from OpenWeatherMap AQI (1-5) or PM2.5/PM10 values
 function calculateAQI(aqiValue, pm25, pm10) {
-  // If OpenWeatherMap AQI is provided (1-5 scale), use it
+
   if (aqiValue && aqiValue >= 1 && aqiValue <= 5) {
     const aqiLabels = {
       1: { label: 'Good', color: '#10b981', usaqi: 50 },
@@ -287,10 +267,10 @@ function calculateAQI(aqiValue, pm25, pm10) {
     return { value: aqi.usaqi, label: aqi.label, color: aqi.color, rawAqi: aqiValue };
   }
   
-  // Fallback: Calculate from PM2.5/PM10 values
+
   if (!pm25 && !pm10) return { value: 0, label: 'No Data', color: '#94a3b8' };
   
-  // Use PM2.5 as primary indicator
+
   const pm = pm25 || (pm10 / 2);
   
   if (pm <= 50) return { value: Math.round(pm), label: 'Good', color: '#10b981' };
@@ -301,7 +281,7 @@ function calculateAQI(aqiValue, pm25, pm10) {
   return { value: Math.round(pm), label: 'Hazardous', color: '#991b1b' };
 }
 
-// Format time labels
+
 function formatTimeLabels(arr) {
   return arr.map(t => {
     const d = new Date(t);
@@ -310,7 +290,6 @@ function formatTimeLabels(arr) {
   });
 }
 
-// Render Air Quality Chart
 function renderAQChart(labels, pm25, pm10) {
   if (aqChart) aqChart.destroy();
   aqChart = new Chart(aqCtx, {
@@ -354,7 +333,6 @@ function renderAQChart(labels, pm25, pm10) {
   });
 }
 
-// Render Weather Chart
 function renderWeatherChart(labels, temps) {
   if (weatherChart) weatherChart.destroy();
   weatherChart = new Chart(weatherCtx, {
@@ -389,7 +367,6 @@ function renderWeatherChart(labels, temps) {
   });
 }
 
-// Render Traffic Chart
 function renderTrafficChart(labels, trafficData) {
   if (trafficChart) trafficChart.destroy();
   trafficChart = new Chart(trafficCtx, {
@@ -428,7 +405,6 @@ function renderTrafficChart(labels, trafficData) {
   });
 }
 
-// Render Energy Chart
 function renderEnergyChart(labels, energyData) {
   if (energyChart) energyChart.destroy();
   energyChart = new Chart(energyCtx, {
@@ -463,7 +439,6 @@ function renderEnergyChart(labels, energyData) {
   });
 }
 
-// Update Insights Panel
 function updateInsights(insights) {
   insightsGrid.innerHTML = '';
   insights.forEach(insight => {
@@ -474,19 +449,18 @@ function updateInsights(insights) {
   });
 }
 
-// Update metric cards
+
 function updateMetrics(aqiData, temp, traffic, energy) {
-  // AQI - supports OpenWeatherMap AQI (1-5) or PM values
+
   const aqi = calculateAQI(aqiData.aqi, aqiData.pm25, aqiData.pm10);
   aqiValue.textContent = aqi.value || '—';
   aqiLabel.textContent = aqi.label;
   aqiValue.style.color = aqi.color;
-  
-  // Temperature
+
   tempValue.textContent = temp !== null ? `${Math.round(temp)}°C` : '—';
   tempLabel.textContent = temp !== null ? 'Current' : 'No Data';
+
   
-  // Traffic
   const avgTraffic = traffic.reduce((a, b) => a + b, 0) / traffic.length;
   trafficValue.textContent = `${Math.round(avgTraffic)}%`;
   if (avgTraffic >= 80) trafficLabel.textContent = 'Heavy';
@@ -501,16 +475,13 @@ function updateMetrics(aqiData, temp, traffic, energy) {
   else energyLabel.textContent = 'Low';
 }
 
-// Main function to load all data for a city
 async function loadAllForCity(cityName) {
   try {
     loader.style.display = 'inline-block';
     loadBtn.disabled = true;
     
-    // Update insights with loading message
     updateInsights(['🔄 Fetching city coordinates and data...']);
     
-    // Geocode city
     const location = await geocodeCity(cityName);
     if (!location) {
       throw new Error('City not found. Please try a different city name.');
@@ -519,14 +490,12 @@ async function loadAllForCity(cityName) {
     currentCoords = { lat: location.lat, lon: location.lon };
     currentCity = location.name || cityName;
     
-    // Fetch data in parallel - pass city name for better API support
     const [airPollutionResp, airPollutionForecastResp, weatherResp] = await Promise.all([
       fetchAirPollution(location.lat, location.lon, currentCity),
       fetchAirPollutionForecast(location.lat, location.lon),
       fetchOpenWeatherMap(location.lat, location.lon)
     ]);
     
-    // Process Air Quality data from aqi.in or other sources
     let pm25Data = [];
     let pm10Data = [];
     let labels = [];
@@ -536,15 +505,14 @@ async function loadAllForCity(cityName) {
     
     console.log('Processing air pollution response:', airPollutionResp);
     
-    // Check if response is from API Ninjas
     if (airPollutionResp && airPollutionResp.source === 'api-ninjas' && airPollutionResp.data) {
       const data = airPollutionResp.data;
-      // API Ninjas format: { overall_aqi, CO: { aqi, concentration }, PM2_5: { aqi, concentration }, PM10: { aqi, concentration }, etc. }
+
       currentAQI = data.overall_aqi || (data.PM2_5 && data.PM2_5.aqi) || (data.PM10 && data.PM10.aqi) || null;
       currentPM25 = (data.PM2_5 && data.PM2_5.concentration) || null;
       currentPM10 = (data.PM10 && data.PM10.concentration) || null;
+
       
-      // Convert US AQI to 1-5 scale if needed
       if (currentAQI && currentAQI > 5 && currentAQI <= 500) {
         if (currentAQI <= 50) currentAQI = 1;
         else if (currentAQI <= 100) currentAQI = 2;
@@ -553,7 +521,6 @@ async function loadAllForCity(cityName) {
         else currentAQI = 5;
       }
       
-      // Use current data point for chart
       if (currentPM25 !== null || currentPM10 !== null) {
         labels = [new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })];
         pm25Data = [currentPM25 || 0];
@@ -562,15 +529,15 @@ async function loadAllForCity(cityName) {
       
       console.log('Extracted from API Ninjas - PM2.5:', currentPM25, 'PM10:', currentPM10, 'AQI:', currentAQI);
     } 
-    // Check if response is from AQICN
+
     else if (airPollutionResp && airPollutionResp.source === 'aqicn' && airPollutionResp.data) {
       const data = airPollutionResp.data;
-      // AQICN format: { aqi, iaqi: { pm25: { v }, pm10: { v } }, time: { s }, city: { name } }
+
       currentAQI = data.aqi || null;
       currentPM25 = (data.iaqi && data.iaqi.pm25 && data.iaqi.pm25.v) || null;
       currentPM10 = (data.iaqi && data.iaqi.pm10 && data.iaqi.pm10.v) || null;
       
-      // Convert US AQI to 1-5 scale if needed
+
       if (currentAQI && currentAQI > 5 && currentAQI <= 500) {
         if (currentAQI <= 50) currentAQI = 1;
         else if (currentAQI <= 100) currentAQI = 2;
@@ -579,7 +546,6 @@ async function loadAllForCity(cityName) {
         else currentAQI = 5;
       }
       
-      // Use current data point for chart
       if (currentPM25 !== null || currentPM10 !== null) {
         labels = [new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })];
         pm25Data = [currentPM25 || 0];
@@ -588,22 +554,22 @@ async function loadAllForCity(cityName) {
       
       console.log('Extracted from AQICN - PM2.5:', currentPM25, 'PM10:', currentPM10, 'AQI:', currentAQI);
     }
-    // Check if response is from NYC Open Data
+
     else if (airPollutionResp && airPollutionResp.source === 'nyc-open-data' && airPollutionResp.results) {
-      // NYC Open Data format - array of records
+     
       const records = airPollutionResp.results || [];
       console.log('NYC Open Data records:', records.length);
       
-      // Process records - try to extract PM2.5, PM10, AQI from various possible field names
+      
       const processedRecords = records.slice(0, 30).reverse();
       
       processedRecords.forEach((record, index) => {
-        // Try different field name variations
+        
         const pm25 = parseFloat(record.pm25 || record.pm2_5 || record.PM25 || record.PM2_5 || record['pm2.5'] || record['PM2.5'] || 0);
         const pm10 = parseFloat(record.pm10 || record.PM10 || 0);
         const aqi = parseFloat(record.aqi || record.AQI || record.air_quality_index || record.index || 0);
         
-        // Extract timestamp
+        
         const timestamp = record.date || record.timestamp || record.time || record.created_at || new Date().toISOString();
         const date = new Date(timestamp);
         
@@ -611,13 +577,13 @@ async function loadAllForCity(cityName) {
         pm25Data.push(pm25);
         pm10Data.push(pm10);
         
-        // Use latest record for current values
+        
         if (index === processedRecords.length - 1) {
           currentPM25 = pm25 || null;
           currentPM10 = pm10 || null;
           currentAQI = aqi || null;
           
-          // Convert US AQI to 1-5 scale if needed
+          
           if (currentAQI && currentAQI > 5 && currentAQI <= 500) {
             if (currentAQI <= 50) currentAQI = 1;
             else if (currentAQI <= 100) currentAQI = 2;
@@ -630,16 +596,16 @@ async function loadAllForCity(cityName) {
       
       console.log('Extracted from NYC Open Data - PM2.5:', currentPM25, 'PM10:', currentPM10, 'AQI:', currentAQI);
     } else if (airPollutionResp && (airPollutionResp.current || airPollutionResp.hourly)) {
-      // Open-Meteo Air Quality API format
+      
       const current = airPollutionResp.current || {};
       const hourly = airPollutionResp.hourly || {};
       
-      // Extract current values
+      
       currentPM25 = current.pm2_5 || null;
       currentPM10 = current.pm10 || null;
       currentAQI = current.us_aqi || current.european_aqi || null;
       
-      // Convert US AQI (0-500) to 1-5 scale if needed
+      
       if (currentAQI && currentAQI > 5) {
         if (currentAQI <= 50) currentAQI = 1;
         else if (currentAQI <= 100) currentAQI = 2;
@@ -647,8 +613,7 @@ async function loadAllForCity(cityName) {
         else if (currentAQI <= 200) currentAQI = 4;
         else currentAQI = 5;
       }
-      
-      // Use hourly data for chart if available
+
       if (hourly.time && hourly.pm2_5 && hourly.pm10) {
         const timeArray = hourly.time.slice(0, 24);
         const pm25Array = hourly.pm2_5.slice(0, 24);
@@ -684,19 +649,18 @@ async function loadAllForCity(cityName) {
         }
       }
     } else if (airPollutionResp && (airPollutionResp.aqi || airPollutionResp.data || airPollutionResp.current || airPollutionResp.status === 'ok')) {
-      // Legacy format support (for other APIs)
+      
       const data = airPollutionResp.data || airPollutionResp.current || airPollutionResp;
       
-      // Extract AQI
+      
       currentAQI = data.aqi || data.AQI || data.air_quality_index || data.index || null;
       
-      // Extract PM2.5 and PM10 - try different field names
+      
       currentPM25 = data.pm25 || data.pm2_5 || data.PM25 || data.PM2_5 || data.pm25_concentration || null;
       currentPM10 = data.pm10 || data.PM10 || data.pm10_concentration || null;
       
-      // If AQI is a number but not in 1-5 range, it might be US AQI (0-500), convert if needed
       if (currentAQI && currentAQI > 5 && currentAQI <= 500) {
-        // Convert US AQI to 1-5 scale
+        
         if (currentAQI <= 50) currentAQI = 1;
         else if (currentAQI <= 100) currentAQI = 2;
         else if (currentAQI <= 150) currentAQI = 3;
@@ -704,7 +668,7 @@ async function loadAllForCity(cityName) {
         else currentAQI = 5;
       }
       
-      // Use forecast data for chart if available
+    
       if (airPollutionForecastResp && (airPollutionForecastResp.forecast || airPollutionForecastResp.data || airPollutionForecastResp.list)) {
         const forecast = airPollutionForecastResp.forecast || airPollutionForecastResp.data || airPollutionForecastResp.list || [];
         const forecastArray = Array.isArray(forecast) ? forecast : (forecast.hourly || forecast.daily || []);
@@ -717,7 +681,7 @@ async function loadAllForCity(cityName) {
           pm10Data.push(item.pm10 || item.PM10 || item.pm10_concentration || 0);
         });
       } else {
-        // If no forecast, use current data point
+        
         if (currentPM25 !== null || currentPM10 !== null) {
           labels = [new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })];
           pm25Data = [currentPM25 || 0];
@@ -725,7 +689,7 @@ async function loadAllForCity(cityName) {
         }
       }
     } else if (airPollutionResp && airPollutionResp.list) {
-      // OpenWeatherMap Air Pollution API format (fallback)
+
       const current = airPollutionResp.list[0];
       if (current) {
         currentAQI = current.main?.aqi || null;
@@ -733,7 +697,7 @@ async function loadAllForCity(cityName) {
         currentPM10 = current.components?.pm10 || null;
       }
       
-      // Use forecast data for chart if available
+
       if (airPollutionForecastResp && airPollutionForecastResp.list) {
         const forecast = airPollutionForecastResp.list.slice(0, 24);
         labels = forecast.map(item => 
@@ -742,7 +706,7 @@ async function loadAllForCity(cityName) {
         pm25Data = forecast.map(item => item.components?.pm2_5 || 0);
         pm10Data = forecast.map(item => item.components?.pm10 || 0);
       } else {
-        // If no forecast, use current data point
+
         if (currentPM25 !== null || currentPM10 !== null) {
           labels = [new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })];
           pm25Data = [currentPM25 || 0];
@@ -750,7 +714,7 @@ async function loadAllForCity(cityName) {
         }
       }
     } else if (airPollutionResp && airPollutionResp.results) {
-      // Fallback: OpenAQ format
+      
       const results = airPollutionResp.results || [];
       console.log('OpenAQ results:', results.length);
       const pm25 = results.filter(r => r.parameter === 'pm25').slice(0, 30).reverse();
@@ -768,9 +732,8 @@ async function loadAllForCity(cityName) {
       
       console.log('Extracted PM2.5:', currentPM25, 'PM10:', currentPM10);
     } else {
-      // If no data found, log for debugging
+      
       console.warn('No air quality data found in response:', airPollutionResp);
-      // Try to use OpenAQ as last resort
       const openAQData = await fetchOpenAQ(location.lat, location.lon);
       if (openAQData && openAQData.results) {
         const results = openAQData.results || [];
@@ -787,27 +750,27 @@ async function loadAllForCity(cityName) {
       }
     }
     
-    // Process Weather data
+
     let weatherLabels = [];
     let temps = [];
     let currentTemp = null;
     
     if (weatherResp && weatherResp.list) {
-      // OpenWeatherMap format
+
       weatherLabels = weatherResp.list.map(item => 
         new Date(item.dt * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       );
       temps = weatherResp.list.map(item => item.main.temp);
       currentTemp = weatherResp.list[0]?.main.temp || null;
     } else if (weatherResp && weatherResp.hourly) {
-      // Open-Meteo format
+
       const hours = weatherResp.hourly.time.slice(0, 24);
       weatherLabels = formatTimeLabels(hours);
       temps = weatherResp.hourly.temperature_2m.slice(0, 24);
       currentTemp = weatherResp.current_weather?.temperature || temps[0] || null;
     }
     
-    // Generate traffic and energy data
+
     const trafficData = generateTrafficData(weatherResp, 24);
     const energyData = generateEnergyData(weatherResp, 24);
     const trafficLabels = weatherLabels.length ? weatherLabels : Array.from({ length: 24 }, (_, i) => {
@@ -815,14 +778,14 @@ async function loadAllForCity(cityName) {
       return `${hour.toString().padStart(2, '0')}:00`;
     });
     
-    // Render charts
+
     console.log('Chart data - PM2.5:', pm25Data.length, 'PM10:', pm10Data.length, 'Labels:', labels.length);
     
     if (pm25Data.length || pm10Data.length) {
       renderAQChart(labels.length > 0 ? labels : ['Current'], pm25Data.length > 0 ? pm25Data : [0], pm10Data.length > 0 ? pm10Data : [0]);
     } else {
       console.warn('No air quality data to render chart');
-      // Render empty chart with message
+ 
       renderAQChart(['No Data'], [0], [0]);
     }
     
@@ -833,12 +796,12 @@ async function loadAllForCity(cityName) {
     renderTrafficChart(trafficLabels, trafficData);
     renderEnergyChart(trafficLabels, energyData);
     
-    // Update metrics
+
     const avgPM25 = pm25Data.length ? pm25Data.reduce((a, b) => a + b, 0) / pm25Data.length : currentPM25;
     const avgPM10 = pm10Data.length ? pm10Data.reduce((a, b) => a + b, 0) / pm10Data.length : currentPM10;
     updateMetrics({ aqi: currentAQI, pm25: avgPM25, pm10: avgPM10 }, currentTemp, trafficData, energyData);
     
-    // Generate insights
+
     const insights = [];
     insights.push(`📍 <strong>Location:</strong> ${currentCity} (${location.lat.toFixed(4)}°N, ${location.lon.toFixed(4)}°E)`);
     
@@ -884,7 +847,6 @@ async function loadAllForCity(cityName) {
     
     updateInsights(insights);
     
-    // Update last refresh time
     lastUpdate.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
     
   } catch (err) {
@@ -899,7 +861,6 @@ async function loadAllForCity(cityName) {
   }
 }
 
-// Auto-refresh functionality
 async function startAutoRefresh(cityName) {
   if (refreshInterval) clearInterval(refreshInterval);
   
@@ -914,7 +875,6 @@ async function startAutoRefresh(cityName) {
   }
 }
 
-// Event Listeners
 loadBtn.addEventListener('click', () => {
   const city = cityInput.value.trim() || 'Delhi';
   startAutoRefresh(city);
@@ -938,7 +898,7 @@ autoRefreshToggle.addEventListener('change', (e) => {
   }
 });
 
-// Initial load
+
 window.addEventListener('load', () => {
   startAutoRefresh(cityInput.value || 'Delhi');
 });
